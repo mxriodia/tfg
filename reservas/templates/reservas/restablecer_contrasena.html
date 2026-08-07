@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Restablecer contraseña - UPO</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        .top-bar { background-color: #003a63; color: #ffffff; text-align: right; padding: 8px 30px; font-size: 13px; font-weight: bold; }
+        .lang-link { color: #ccc; text-decoration: none; cursor: pointer; font-weight: normal; }
+        .lang-link.active { color: #ffffff; font-weight: bold; }
+        .header { background-color: #ffffff; padding: 15px 40px; border-bottom: 1px solid #e5e5e5; }
+        .main-content { flex: 1; display: flex; justify-content: center; align-items: center; padding: 40px 20px; }
+        .recover-card { background-color: #ffffff; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 500px; padding: 30px; box-sizing: border-box; }
+        .title-orange { color: #f0a924; font-size: 20px; margin: 0 0 15px 0; font-weight: normal; text-align: center; }
+        .form-row { margin-bottom: 20px; }
+        .form-row label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: #003a63; }
+        .input-field { width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .btn-action { width: 100%; padding: 12px; background-color: #003a63; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; }
+        .btn-action:hover { background-color: #00233d; }
+        .system-msg { padding: 12px; margin-bottom: 20px; border-radius: 4px; font-size: 13px; font-weight: bold; text-align: center; }
+        .system-msg.success { background-color: #dff0d8; color: #3c763d; border: 1px solid #d6e9c6; }
+        .system-msg.error { background-color: #f2dede; color: #a94442; border: 1px solid #ebccd1; }
+        .bottom-blue-bar { background-color: #003a63; height: 15px; width: 100%; }
+        .logo-container { display: flex; align-items: center; }
+        .logo-container img { height: 65px; width: auto; }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <a href="?lang=es" id="lang-es" class="lang-link active">Español</a> | 
+        <a href="?lang=en" id="lang-en" class="lang-link">English</a>
+    </div>
+    
+    <div class="header">
+        <div class="logo-container">
+            <img src="https://login.upo.es/themes/adas/static/img/logo-upo.png" alt="Logo Universidad Pablo de Olavide">
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="recover-card">
+            <h2 class="title-orange" id="lbl-title">Restablecer mi contraseña</h2>
+            
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="system-msg {{ message.tags }}">
+                            <span id="backend-message" data-status="{{ message.message }}"></span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if not exito_cambio %}
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="form-row">
+                        <label id="lbl-pass1">Nueva contraseña:</label>
+                        <input type="password" name="pass1" class="input-field" required>
+                    </div>
+                    <div class="form-row">
+                        <label id="lbl-pass2">Confirmar nueva contraseña:</label>
+                        <input type="password" name="pass2" class="input-field" required>
+                    </div>
+                    <button type="submit" class="btn-action" id="btn-submit">Cambiar contraseña</button>
+                </form>
+            {% endif %}
+
+            <div style="text-align: center; font-size: 13px; margin-top: 25px;">
+                <a href="{% url 'login' %}" style="color: #777; text-decoration: none;" id="lnk-return">← Volver a la pantalla de identificación</a>
+            </div>
+        </div>
+    </div>
+    <div class="bottom-blue-bar"></div>
+
+    <script>
+        const traducciones = {
+            es: {
+                titlePage: "Restablecer Contraseña - UPO",
+                titleForm: "Restablecer mi contraseña",
+                pass1: "Nueva contraseña:",
+                pass2: "Confirmar nueva contraseña:",
+                btnAction: "Cambiar contraseña",
+                lnkReturn: "← Volver a la pantalla de identificación",
+                msgError: "Las contraseñas introducidas no coinciden.",
+                msgSuccess: "Tu contraseña ha sido cambiada con éxito.",
+                msgErrorLink: "El enlace de recuperación no es válido o ha expirado."
+
+            },
+            en: {
+                titlePage: "Reset Password - UPO",
+                titleForm: "Reset my password",
+                pass1: "New password:",
+                pass2: "Confirm new password:",
+                btnAction: "Change password",
+                lnkReturn: "← Back to login page",
+                msgError: "The passwords entered do not match.",
+                msgSuccess: "Your password has been successfully changed.",
+                msgErrorLink: "The recovery link is invalid or has expired."
+            }
+        };
+
+        // Traduce el contenido según el idioma seleccionado (por defecto usa el español)
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentLang = urlParams.get('lang') || localStorage.getItem('upo_lang') || 'es';
+        
+        // Almacena el idioma seleccionado para recordar la preferencia del usuario
+        localStorage.setItem('upo_lang', currentLang);
+
+        // Resalta el idioma seleccionado
+        document.getElementById('lang-es').classList.remove('active');
+        document.getElementById('lang-en').classList.remove('active');
+        document.getElementById(`lang-${currentLang}`).classList.add('active');
+
+        document.getElementById('page-title').innerText = traducciones[currentLang].titlePage;
+        document.getElementById('lbl-title').innerText = traducciones[currentLang].titleForm;
+        document.getElementById('lnk-return').innerText = traducciones[currentLang].lnkReturn;
+
+        // Conserva el idioma seleccionado al redirigir login
+        document.getElementById('lnk-return').href = "{% url 'login' %}?lang=" + currentLang;
+
+        // Si se cambia la contraseña, el formulario desaparece
+        const lblPass1 = document.getElementById('lbl-pass1');
+        if (lblPass1) lblPass1.innerText = traducciones[currentLang].pass1;
+        
+        const lblPass2 = document.getElementById('lbl-pass2');
+        if (lblPass2) lblPass2.innerText = traducciones[currentLang].pass2;
+        
+        const btnSubmit = document.getElementById('btn-submit');
+        if (btnSubmit) btnSubmit.innerText = traducciones[currentLang].btnAction;
+
+        // Traducción de mensajes
+        const msgBackend = document.getElementById('backend-message');
+        if (msgBackend) {
+            const status = msgBackend.getAttribute('data-status');
+            if (status === 'ERROR') {
+                msgBackend.innerText = traducciones[currentLang].msgError;
+            } else if (status === 'SUCCESS') {
+                msgBackend.innerText = traducciones[currentLang].msgSuccess;
+            } else if (status === 'ERROR_LINK') {
+                msgBackend.innerText = traducciones[currentLang].msgErrorLink;
+            }
+        }
+        
+    </script>
+</body>
+</html>

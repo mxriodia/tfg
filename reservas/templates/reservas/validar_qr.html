@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validación QR - UPO</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; 
+            background-color: #f0f2f5; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+
+        /* Simulador de la interfaz móvil */
+        .phone-mockup { 
+            background: #ffffff; 
+            padding: 25px; 
+            border-radius: 36px; 
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12), 0 8px 10px rgba(0, 0, 0, 0.08); 
+            width: 100%; 
+            max-width: 340px; 
+            border: 8px solid #222;
+            position: relative;
+        }
+        .phone-mockup::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 4px;
+            background-color: #222;
+            border-radius: 2px;
+        }
+
+        .header-title {
+            color: #003a63;
+            margin: 15px 0 5px 0;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .location-info {
+            font-size: 13px; 
+            color: #566573; 
+            margin-bottom: 20px;
+            background: #f4f6f7;
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        /* Simulador de cámara */
+        .camera-viewport { 
+            width: 210px; 
+            height: 210px; 
+            margin: 20px auto; 
+            position: relative; 
+            background-color: #111;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        .scanner-target, .scanner-target-bottom {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            right: 30px;
+            bottom: 30px;
+        }
+        /* Esquinas amarillas */
+        .scanner-target::before, .scanner-target::after,
+        .scanner-target-bottom::before, .scanner-target-bottom::after {
+            content: ''; 
+            position: absolute; 
+            width: 15px; 
+            height: 15px; 
+            border-color: #f0a924; 
+            border-style: solid;
+        }
+        .scanner-target::before { top: 0; left: 0; border-width: 3px 0 0 3px; }
+        .scanner-target::after { top: 0; right: 0; border-width: 3px 3px 0 0; }
+        .scanner-target-bottom::before { bottom: 0; left: 0; border-width: 0 0 3px 3px; }
+        .scanner-target-bottom::after { bottom: 0; right: 0; border-width: 0 3px 3px 0; }
+        /* Escáner con animación (escaneo constante) */
+        .laser-line { 
+            position: absolute; 
+            width: 100%; 
+            height: 2px;
+            background-color: #ff3b30;
+            top: 0; 
+            animation: scanMotion 2.5s infinite ease-in-out; 
+        }
+        @keyframes scanMotion { 
+            0% { top: 5%; } 
+            50% { top: 95%; } 
+            100% { top: 5%; } 
+        }
+
+        /* Token interactivo para copiar con un click */
+        .token-helper-text {
+            font-size: 11px; 
+            color: #7f8c8d; 
+            margin: 15px 0 5px 0;
+        }
+        .info-token-box { 
+            background: #f8f9f9; 
+            padding: 10px; 
+            border-radius: 6px; 
+            font-size: 11px; 
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Courier, monospace; 
+            word-break: break-all; 
+            margin-bottom: 20px; 
+            border: 1px solid #ebedef;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .info-token-box:hover {
+            background: #ebf5fb;
+            border-color: #3498db;
+        }
+
+        /* Formulario */
+        .input-token {
+            width: 100%; 
+            padding: 12px; 
+            box-sizing: border-box; 
+            margin-bottom: 15px; 
+            border: 1px solid #ccd1d1; 
+            border-radius: 6px;
+            font-size: 13px;
+            text-align: center;
+            transition: border-color 0.2s;
+        }
+        .input-token:focus {
+            border-color: #003a63;
+            outline: none;
+        }
+        .btn-submit { 
+            width: 100%; 
+            padding: 14px; 
+            background-color: #003a63; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: background-color 0.2s;
+        }
+        .btn-submit:hover { 
+            background-color: #00223b; 
+        }
+        .link-back {
+            display: inline-block;
+            margin-top: 15px;
+            color: #7f8c8d; 
+            font-size: 13px; 
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .link-back:hover {
+            color: #34495e;
+            text-decoration: underline;
+        }
+
+        /* Alerta de copiado al vuelo */
+        .toast-copy {
+            position: absolute;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+<div class="phone-mockup">
+    <div id="toast" class="toast-copy">¡Copiado!</div>
+
+    <h2 class="header-title">📱 Escanear código QR</h2>
+    <div class="location-info">
+        📍 <strong>Edificio {{ reserva.aula.edificio.numero_edificio}} Aula {{ reserva.aula.numero_aula }}</strong>
+    </div>
+    
+    <div class="camera-viewport">
+        <div class="laser-line"></div>
+        <div class="scanner-target"></div>
+        <div class="scanner-target-bottom"></div>
+    </div>
+    
+    <p class="token-helper-text">Haga click para copiar automáticamente:</p>
+    <div class="info-token-box" id="tokenBox" onclick="copiarTokenAlPortapapeles()">
+        {{ reserva.aula.codigo_qr_token }}
+    </div>
+
+    <form method="POST">
+        {% csrf_token %}
+        <input type="text" name="token_qr" id="inputToken" placeholder="Pegue el hash del código QR aquí" required class="input-token">
+        <button type="submit" class="btn-submit">Validar presencia</button>
+    </form>
+    
+    <a href="/panel_profesor/?tab=tab-reservas" class="link-back">← Volver a Mis Reservas</a>
+</div>
+
+<script>
+    // Copia automáticamente el token del código QR al portapapeles del sistema y lo introduce directamente en el campo de texto
+    function copiarTokenAlPortapapeles() {
+        // Obtiene el texto del token eliminando espacios en blanco o saltos de línea ocultos
+        const tokenText = document.getElementById('tokenBox').textContent.trim();
+        
+        if (!tokenText) {
+            console.warn('El token está vacío.');
+            return;
+        }
+
+        // Utiliza la API del navegador para guardar el texto del token en el portapapeles del usuario
+        navigator.clipboard.writeText(tokenText).then(() => {
+            // Si funciona, aparece "¡Copiado!" y autorrellena el campo de texto
+            const toast = document.getElementById('toast');
+            toast.style.display = 'block';
+            document.getElementById('inputToken').value = tokenText;
+            
+            // A los 1.2 segundos el mensaje "¡Copiado!" desaparece
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 1200);
+        });
+    }
+</script>
+</body>
+</html>

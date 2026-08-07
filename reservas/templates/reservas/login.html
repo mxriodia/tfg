@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicia sesión - UPO</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;  /* Fuerza al body a ocupar toda la pantalla para el footer */
+        }
+        /* Barra de idiomas superior */
+        .top-bar {
+            background-color: #003a63;
+            color: #ffffff;
+            text-align: right;
+            padding: 8px 30px;
+            font-size: 13px;
+        }
+        .lang-link {
+            color: #ccc;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .lang-link.active {
+            color: #ffffff;
+            font-weight: bold;
+        }
+        /* Cabecera con logo */
+        .header {
+            background-color: #ffffff;
+            padding: 15px 40px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+        .logo-container img {
+            height: 65px;
+            width: auto;
+        }
+        /* Contenedor principal */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+        }
+        /* Caja del SSO */
+        .sso-card {
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 780px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .title-orange {
+            color: #f0a924;
+            font-size: 22px;
+            text-align: center;
+            margin: 0 0 5px 0;
+            font-weight: bold;
+        }
+        .subtitle-gray {
+            color: #777;
+            font-size: 14px;
+            text-align: center;
+            margin: 0 0 15px 0;
+            border-top: 1px dashed #ccc;
+            padding-top: 8px;
+            font-weight: bold;
+        }
+        /* Layout de dos columnas interno */
+        .columns-container {
+            display: flex;
+            margin-top: 25px;
+        }
+        .left-col {
+            flex: 1;
+            padding-right: 30px;
+        }
+        .right-col {
+            width: 250px;
+            border-left: 1px dashed #ccc;
+            padding-left: 30px;
+            text-align: center;
+        }
+        /* Formulario de login */
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        .input-label {
+            background-color: #003a63;
+            color: white;
+            font-size: 12px;
+            padding: 8px;
+            width: 110px;
+            text-align: left;
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+            box-sizing: border-box;
+        }
+        .input-field {
+            flex: 1;
+            padding: 6px 10px;
+            font-size: 14px;
+            border: 1px solid #333;
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
+            outline: none;
+            box-sizing: border-box;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            cursor: pointer;
+            user-select: none;
+            font-size: 16px;
+            color: #555;
+        }
+        
+        .btn-aceptar {
+            background-color: #7292a1;
+            color: white;
+            border: 1px solid #5a7887;
+            padding: 6px 20px;
+            font-size: 13px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        .btn-aceptar.active {
+            background-color: #003a63;
+            border-color: #002244;
+        }
+        .links-helper {
+            margin-top: 15px;
+            font-size: 12px;
+        }
+        .links-helper a {
+            color: #003a63;
+            text-decoration: none;
+        }
+        /* Columna derecha */
+        .right-title {
+            color: #003a63;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .cert-box {
+            background-color: #003a63;
+            color: white;
+            display: inline-block;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 12px;
+            width: 80px;
+            text-align: center;
+        }
+        /* Textos inferiores */
+        .info-footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #444;
+            text-align: center;
+            line-height: 1.5;
+        }
+        .adas-brand {
+            text-align: right;
+            font-size: 11px;
+            color: #003a63;
+            margin-top: 15px;
+        }
+        /* Footer */
+        .bottom-blue-bar {
+            background-color: #003a63;
+            height: 15px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <a href="?lang=es" id="lang-es" class="lang-link active">Español</a> | 
+        <a href="?lang=en" id="lang-en" class="lang-link">English</a>
+    </div>
+
+    <div class="header">
+        <div class="logo-container">
+            <img src="https://login.upo.es/themes/adas/static/img/logo-upo.png" alt="Logo Universidad Pablo de Olavide">
+        </div>
+    </div>
+
+    <div class="main-content">
+
+        <div class="sso-card">
+            <h1 class="title-orange" id="txt-title">Identificación de usuario</h1>
+            <div class="subtitle-gray" id="txt-subtitle" >Autenticación centralizada</div>
+
+            <div class="columns-container">
+                <div class="left-col">
+                    <form method="POST" id="loginForm">
+                        {% csrf_token %}
+                        <p id="txt-error" style="color: red; font-size: 12px; margin-bottom: 10px; display: {% if form.errors %}block{% else %}none{% endif %};">
+                            Usuario o contraseña incorrectos.</p>
+
+                        <div class="input-group">
+                            <div class="input-label" id="label-username">USUARIO/A</div>
+                            <input type="text" name="username" id="username" class="input-field" required>
+                        </div>
+
+                        <div class="input-group">
+                            <div class="input-label" id="label-password">CONTRASEÑA</div>
+                            <input type="password" name="password" id="password" class="input-field" required>
+                            <span id="toggle-eye" class="toggle-password">👁️</span>
+                        </div>
+
+                        <button type="submit" id="btnAceptar" class="btn-aceptar">ACEPTAR</button>
+                    </form>
+
+                    <div class="links-helper">
+                        <a href="{% url 'recuperar_contrasena' %}" id="link-recover">Quiero recuperar mi contraseña</a>
+                    </div>
+                </div>
+
+                <div class="right-col">
+                    <div class="right-title" id="txt-right-title">OTROS MEDIOS DE AUTENTICACIÓN</div>
+                        <div class="cert-box">
+                            <div style="font-size: 18px; margin-bottom: 2px;">🪪</div>
+                                <span id="txt-cert">Certificado digital</span>
+                        </div>
+                    </div>
+                </div>
+
+            <div class="info-footer" id="txt-footer">
+                Una vez que se haya autenticado no será necesario identificarse de nuevo para acceder a otros recursos.<br>
+                <strong>Para desconectarse, recomendamos que cierre su navegador (cerrando todas las ventanas).</strong>
+            </div>
+
+            <div class="adas-brand" id="txt-sim">
+                Esto es una simulación
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-blue-bar"></div>
+
+    <script>
+        // Se obtienen las referencias a los inputs, el botón y el icono del ojo para interactuar con ellos más adelante
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const btnAceptar = document.getElementById('btnAceptar');
+        const toggleEye = document.getElementById('toggle-eye');
+
+        // Contiene los textos de la interfaz en español e inglés para permitir el cambio de idioma dinámico
+        const translations = {
+            es: {
+                title: "Identificación de usuario",
+                subtitle: "Autenticación centralizada",
+                username: "USUARIO/A",
+                password: "CONTRASEÑA",
+                btn: "ACEPTAR",
+                recover: "Quiero recuperar mi contraseña",
+                rightTitle: "OTROS MEDIOS DE AUTENTICACIÓN",
+                cert: "Certificado digital",
+                footer: "Una vez que se haya autenticado no será necesario identificarse de nuevo para acceder a otros recursos.<br><strong>Para desconectarse, recomendamos que cierre su navegador (cerrando todas las ventanas).</strong>",
+                error: "Usuario o contraseña incorrectos.",
+                sim: "Esto es una simulación"
+            },
+            en: {
+                title: "User Identification",
+                subtitle: "Single Sign-On Service",
+                username: "USER",
+                password: "PASSWORD",
+                btn: "SEND",
+                recover: "I want to remember my password",
+                rightTitle: "OTHER AUTENTICATION METHODS",
+                cert: "Digital certificate",
+                footer: "Once authenticated it wouldn't be required to login again to access another resources.<br><strong>To logout we recommend you to close your browser (closing all the open windows).</strong>",
+                error: "Invalid username or password.",
+                sim: "This is a simulation"
+            }
+        };
+        
+        // Traduce el contenido según el idioma seleccionado (por defecto usa el español)
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentLang = urlParams.get('lang') === 'en' ? 'en' : 'es';
+
+        // Resalta el idioma seleccionado
+        document.getElementById('lang-es').classList.remove('active');
+        document.getElementById('lang-en').classList.remove('active');
+        document.getElementById(`lang-${currentLang}`).classList.add('active');
+
+        document.getElementById('txt-title').innerText = translations[currentLang].title;
+        document.getElementById('txt-subtitle').innerText = translations[currentLang].subtitle;
+        document.getElementById('label-username').innerText = translations[currentLang].username;
+        document.getElementById('label-password').innerText = translations[currentLang].password;
+        document.getElementById('btnAceptar').innerText = translations[currentLang].btn;
+        document.getElementById('link-recover').innerText = translations[currentLang].recover;
+        document.getElementById('txt-right-title').innerText = translations[currentLang].rightTitle;
+        document.getElementById('txt-cert').innerText = translations[currentLang].cert;
+        document.getElementById('txt-sim').innerText = translations[currentLang].sim;
+        // Se usa innerHTML porque contiene la etiquetas HTML <strong>
+        document.getElementById('txt-footer').innerHTML = translations[currentLang].footer;
+        
+        // Conserva el idioma seleccionado al redirigir al enlace de recuperación
+        const linkRecover = document.getElementById('link-recover');
+        linkRecover.href = "{% url 'recuperar_contrasena' %}?lang=" + currentLang;
+
+        // Si se produce un fallo al iniciar sesión, traduce también el mensaje de error
+        const errorEl = document.getElementById('txt-error');
+        if (errorEl) errorEl.innerText = translations[currentLang].error;
+
+        // Si los campos USUARIO y CONTRASEÑA contienen texto (eliminando espacios), cambia el estilo visual del botón a 'active'.
+        function evaluarCampos() {
+            if (usernameInput.value.trim() !== "" && passwordInput.value.trim() !== "") {
+                btnAceptar.classList.add('active');
+            } else {
+                btnAceptar.classList.remove('active');
+            }
+        }
+
+        // Cambia el tipo del input de contraseña entre 'password' (oculto) y 'text' (visible) al hacer clic en el icono del ojo
+        toggleEye.addEventListener('click', function () {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+            } else {
+                passwordInput.type = 'password';
+            }
+        });
+
+        // Comprueba el estado de los campos en tiempo real para activar/desactivar el botón "ACEPTAR"
+        usernameInput.addEventListener('input', evaluarCampos);
+        passwordInput.addEventListener('input', evaluarCampos);
+    </script>
+</body>
+</html>
