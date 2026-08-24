@@ -193,6 +193,23 @@
             height: 15px;
             width: 100%;
         }
+
+        @media (max-width: 768px) {
+            .columns-container {
+                flex-direction: column;
+            }
+            .left-col {
+                padding-right: 0;
+                margin-bottom: 30px;
+            }
+            .right-col {
+                width: 100%;
+                border-left: none;
+                border-top: 1px dashed #ccc;
+                padding-left: 0;
+                padding-top: 25px;
+            }
+        }
     </style>
 </head>
 <body>
