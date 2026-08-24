@@ -7,11 +7,13 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from django.utils.translation import gettext as _
 import calendar
-from django.contrib.auth import update_session_auth_hash
 from django.db.models import IntegerField, Count, Q
 from django.db.models.functions import Cast
 from django.core.mail import send_mail
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 import base64
+from PIL import Image
 
 # Create your views here.
 
@@ -74,6 +76,10 @@ def panel_profesor(request):
             hora_fin_str = request.POST.get('hora_fin')
             capacidad = request.POST.get('capacidad')
             
+            if capacidad and int(capacidad) <= 0:
+                messages.error(request, "Error: La capacidad mínima de alumnos debe ser mayor que 0.")
+                return redirect('/panel_profesor/?tab=tab-buscar')
+            
             # Excluye aulas no operativas
             aulas = Aula.objects.filter(operativa=True, edificio__operativo=True)
             
@@ -88,6 +94,11 @@ def panel_profesor(request):
             for r_id, cant in zip(recursos_ids, cantidades):
                 if r_id and r_id != 'Cualquiera':
                     c_val = int(cant) if cant else 1 # Por defecto 1
+                    
+                    if c_val <= 0:
+                        messages.error(request, "Error: La cantidad de equipamiento requerido debe ser mayor que 0.")
+                        return redirect('/panel_profesor/?tab=tab-buscar')
+                    
                     filtros_equipamiento.append({'recurso_id': int(r_id), 'cantidad': c_val})
 
             if filtros_equipamiento:
@@ -104,6 +115,15 @@ def panel_profesor(request):
                 hora_fin_val = parse_time(hora_fin_str)
                 
                 if fecha_val and hora_ini_val and hora_fin_val:
+                    if hora_ini_val >= hora_fin_val:
+                        messages.error(request, "Error: La hora de inicio debe ser anterior a la hora de fin.")
+                        return redirect('/panel_profesor/?tab=tab-buscar')  
+                    
+                    # Comprueba si la fecha es anterior a hoy, o si es hoy pero la hora de inicio ya ha pasado
+                    if fecha_val < ahora.date() or (fecha_val == ahora.date() and hora_ini_val < ahora.time()):
+                        messages.error(request, "Error: No puedes realizar reservas en fechas u horas pasadas.")
+                        return redirect('/panel_profesor/?tab=tab-buscar')
+                    
                     # Traduce manualmente el nombre del día para la interfaz
                     dias_es = {
                         'Monday': 'lunes', 'Tuesday': 'martes', 'Wednesday': 'miércoles',
@@ -195,6 +215,15 @@ def panel_profesor(request):
             
             h_ini = parse_time(nueva_hora_inicio)
             h_fin = parse_time(nueva_hora_fin)
+            fecha = parse_date(nueva_fecha)
+            
+            if h_ini >= h_fin:
+                messages.error(request, "Error: La hora de inicio debe ser anterior a la hora de finalización.")
+                return redirect('/panel_profesor/?tab=tab-reservas')
+            
+            if fecha < ahora.date() or (fecha == ahora.date() and h_ini < ahora.time()):
+                messages.error(request, "Error: No puedes reprogramar una reserva para una fecha u hora que ya ha pasado.")
+                return redirect('/panel_profesor/?tab=tab-reservas')
             
             # Verifica conflictos excluyendo la propia reserva que se está modificando
             conflicto = Reserva.objects.filter(
@@ -255,9 +284,30 @@ def panel_profesor(request):
                 usuario.first_name = request.POST.get('nombre')
                 usuario.last_name = request.POST.get('apellidos')
                 usuario.correo_personal = request.POST.get('correo_personal')
+                
+                try:
+                    if usuario.correo_personal:
+                        validate_email(usuario.correo_personal)
+                except ValidationError:
+                    messages.error(request, "Error: El formato del correo personal no es válido.")
+                    return redirect('/panel_profesor/?tab=tab-perfil')
+                
                 usuario.despacho = request.POST.get('despacho')
                 if 'foto_perfil' in request.FILES:
-                    usuario.foto_perfil = request.FILES['foto_perfil']
+                    archivo_subido = request.FILES['foto_perfil']
+                    try:
+                        # Abrir y verificar que los datos internos son de imagen
+                        img = Image.open(archivo_subido)
+                        img.verify() # Comprueba la integridad sin cargar toda la imagen en RAM
+                        
+                        # Devolver el "puntero" al principio para que Django pueda guardarlo correctamente después
+                        archivo_subido.seek(0)
+                        
+                        usuario.foto_perfil = archivo_subido
+                    except Exception:
+                        messages.error(request, "Error: El archivo está corrupto o tiene una extensión falsa. Sube una imagen real.")
+                        return redirect('/panel_profesor/?tab=tab-perfil')
+                    
                 usuario.save()
                 messages.success(request, "Perfil actualizado correctamente.")
             return redirect('/panel_profesor/?tab=tab-perfil')
@@ -568,6 +618,17 @@ def panel_administrador(request):
         if 'btn_crear_usuario' in request.POST:
             username = request.POST.get('username')
             email = request.POST.get('email')
+            correo_personal = request.POST.get('correo_personal')
+            
+            try:
+                # Valida el correo institucional
+                validate_email(email)
+                # Valida el correo personal si el usuario ha escrito algo
+                if correo_personal:
+                    validate_email(correo_personal)
+            except ValidationError:
+                messages.error(request, "Error: El formato de uno de los correos introducidos no es válido.")
+                return redirect('/panel_administrador/?tab=tab-usuarios')
             
             # Comprobar que el usuario no existe (nombre de usuario y email)
             if Usuario.objects.filter(username=username).exists():
@@ -590,7 +651,17 @@ def panel_administrador(request):
                         )
             
             if 'foto_perfil' in request.FILES:
-                nuevo_usuario.foto_perfil = request.FILES['foto_perfil']
+                archivo_subido = request.FILES['foto_perfil']
+                try:
+                    img = Image.open(archivo_subido)
+                    img.verify()
+                    archivo_subido.seek(0)
+                    nuevo_usuario.foto_perfil = archivo_subido
+                except Exception:
+                    # Si falla, borrar el usuario y mostrar error
+                    nuevo_usuario.delete() 
+                    messages.error(request, "Error: El archivo de foto subido está corrupto o tiene una extensión falsa.")
+                    return redirect('/panel_administrador/?tab=tab-usuarios')
                 nuevo_usuario.save()
             
             messages.success(request, "Usuario creado correctamente.")
@@ -610,11 +681,27 @@ def panel_administrador(request):
             u.first_name = request.POST.get('nombre')
             u.last_name = request.POST.get('apellidos')
             u.correo_personal = request.POST.get('correo_personal')
+            
+            try:
+                if u.correo_personal: # Solo valida si el campo no está vacío
+                    validate_email(u.correo_personal)
+            except ValidationError:
+                messages.error(request, "Error: El formato del correo personal no es válido.")
+                return redirect('/panel_administrador/?tab=tab-usuarios')
+            
             u.despacho = request.POST.get('despacho')
             u.rol = request.POST.get('rol')
             
             if 'foto_perfil' in request.FILES:
-                u.foto_perfil = request.FILES['foto_perfil']
+                archivo_subido = request.FILES['foto_perfil']
+                try:
+                    img = Image.open(archivo_subido)
+                    img.verify()
+                    archivo_subido.seek(0)
+                    u.foto_perfil = archivo_subido
+                except Exception:
+                    messages.error(request, "Error: El archivo de foto subido está corrupto o tiene una extensión falsa.")
+                    return redirect('/panel_administrador/?tab=tab-usuarios')
                 
             u.save()
             messages.success(request, f"Usuario '{u.username}' actualizado correctamente.")
@@ -672,6 +759,11 @@ def panel_administrador(request):
                 messages.error(request, f"Error: El Aula {numero_aula} (Planta {planta}) ya existe en el Edificio {edificio_id}.")
                 return redirect('/panel_administrador/?tab=tab-aulas')
             
+            capacidad_recibida = int(request.POST.get('capacidad_max'))
+            if capacidad_recibida <= 0:
+                messages.error(request, "Error: La capacidad máxima debe ser mayor que 0.")
+                return redirect('/panel_administrador/?tab=tab-aulas')
+            
             nueva_aula = Aula.objects.create(
                 edificio_id=edificio_id,
                 planta=planta,
@@ -707,7 +799,12 @@ def panel_administrador(request):
             a.edificio_id = request.POST.get('edificio_id')
             a.planta = request.POST.get('planta')
             a.numero_aula = request.POST.get('numero_aula')
-            a.capacidad_max = request.POST.get('capacidad_max')
+            a.capacidad_max = int(request.POST.get('capacidad_max'))
+            
+            if a.capacidad_max <= 0:
+                messages.error(request, "Error: La capacidad máxima debe ser mayor que 0.")
+                return redirect('/panel_administrador/?tab=tab-aulas')
+            
             a.operativa = request.POST.get('operativa') == 'True'
             a.save()
             
@@ -842,6 +939,14 @@ def recuperar_contrasena(request):
     email_enviado = ""
     if request.method == 'POST':
         email = request.POST.get('email')
+        
+        try:
+            validate_email(email)
+        except ValidationError:
+            # Si el formato es inválido, muestra el mismo error sin consultar la base de datos
+            messages.error(request, "ERROR")
+            return render(request, 'reservas/recuperar_contrasena.html', {'exito': exito, 'email_enviado': email_enviado})
+        
         try:
             user = Usuario.objects.get(email=email)
             # Encripta el ID del usuario en base64 de forma sencilla para meterlo en la URL segura

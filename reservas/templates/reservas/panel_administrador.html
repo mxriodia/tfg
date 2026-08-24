@@ -571,7 +571,7 @@
                                         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:15px; margin-bottom:15px;">
                                             <div class="form-row" style="margin:0;"><label>Nombre:</label><input type="text" name="nombre" value="{{ u.first_name }}" required></div>
                                             <div class="form-row" style="margin:0;"><label>Apellidos:</label><input type="text" name="apellidos" value="{{ u.last_name }}" required></div>
-                                            <div class="form-row" style="margin:0;"><label>Email Personal:</label><input type="email" name="email" value="{{ u.email }}"></div>
+                                            <div class="form-row" style="margin:0;"><label>Email Personal:</label><input type="email" name="correo_personal" value="{{ u.correo_personal|default_if_none:'' }}"></div>
                                             <div class="form-row" style="margin:0;"><label>Despacho:</label><input type="text" name="despacho" value="{{ u.despacho|default:'' }}"></div>
                                             <div class="form-row" style="margin:0;">
                                                 <label>Rol:</label>
@@ -722,7 +722,7 @@
                             </div>
                             <div class="form-row" style="margin:0;">
                                 <label>Aforo máximo:</label>
-                                <input type="number" name="capacidad_max" placeholder="ej. 50" required>
+                                <input type="number" name="capacidad_max" placeholder="ej. 50" min="1" required>
                             </div>
                             <div class="form-row" style="margin:0;">
                                 <label>Estado:</label>

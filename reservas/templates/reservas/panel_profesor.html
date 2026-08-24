@@ -654,7 +654,7 @@
             <!-- PESTAÑA: Buscar aulas -->
             <div id="tab-buscar" class="tab-content {% if active_tab == 'tab-buscar' %}active{% endif %}">
                 <h2>🗒️ Realizar una nueva reserva</h2>                
-                <form method="POST">
+                <form method="POST" action="?tab=tab-buscar">
                     {% csrf_token %}
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 50px; max-width: 900px; margin-bottom: 25px;">
                         <div class="form-row" style="margin:0;">
@@ -671,7 +671,7 @@
                     </div>
                         <div class="form-row" style="margin:0;">
                             <label>Capacidad mínima:</label>
-                            <input type="number" name="capacidad" placeholder="Nº de alumnos" value="{{ post_data.capacidad }}">
+                            <input type="number" name="capacidad" placeholder="Nº de alumnos" value="{{ post_data.capacidad }} min="1"">
                         </div>
                         <div class="form-row" style="grid-column: span 2; max-width: 100%;">
                             <label>Equipamiento requerido:</label>
