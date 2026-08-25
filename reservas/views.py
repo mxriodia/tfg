@@ -412,7 +412,6 @@ def panel_profesor(request):
     todos_los_recursos = Recurso.objects.all()
     
     # Reservas validadas por QR para poder reportar incidencias 
-    reservas_validadas = Reserva.objects.filter(usuario=usuario, fecha_validacion__isnull=False, estado='activa')
     notificaciones_activas = Notificacion.objects.filter(usuario=usuario, leida=False).order_by('-fecha_envio') # Notificaciones no leídas
     
     # Determina qué pestaña mostrar. Si no se especifica, se carga 'tab-dashboard'
@@ -420,10 +419,10 @@ def panel_profesor(request):
     
     total_activas = mis_reservas_activas.count()
     total_canceladas = mis_reservas_canceladas.count()
-    total_validadas = reservas_validadas.count()
+    total_validadas = mis_reservas_expiradas.count()
     
     # Porcentaje de reservas que sí llegó a validar (evitando cancelaciones)
-    total_historico = total_activas + total_canceladas
+    total_historico = total_validadas + total_canceladas
     porcentaje_asistencia = int((total_validadas / total_historico) * 100) if total_historico > 0 else 100
 
     # Próxima sesión de hoy
@@ -528,7 +527,6 @@ def panel_profesor(request):
         'busqueda_realizada': busqueda_realizada,
         'post_data': post_data,
         'active_tab': active_tab,
-        'reservas_validadas': reservas_validadas,
         'notificaciones_activas': notificaciones_activas,
         'notificaciones_count': notificaciones_activas.count(),
         'nombre_dia': nombre_dia,
