@@ -379,8 +379,36 @@ def panel_profesor(request):
     # Guarda la primera pendiente para mostrar el aviso emergente o formulario dinámico
     reserva_pendiente_valorar = reservas_finalizadas_usuario.first()
 
-    mis_reservas_activas = Reserva.objects.filter(usuario=usuario, estado='activa').order_by('fecha', 'hora_inicio')
-    mis_reservas_canceladas = Reserva.objects.filter(usuario=usuario, estado='cancelada').order_by('fecha', 'hora_inicio')
+    mis_reservas_activas = Reserva.objects.filter(
+            usuario=usuario, 
+            estado='activa'
+        ).exclude(
+            (Q(fecha__lt=ahora.date())) | 
+            (Q(fecha=ahora.date(), hora_fin__lt=ahora.time()))
+        ).order_by('fecha', 'hora_inicio')    
+        
+    for res in mis_reservas_activas:
+        inicio_res = datetime.combine(res.fecha, res.hora_inicio)
+        inicio_res = timezone.make_aware(inicio_res, timezone.get_current_timezone())
+        
+        # Minutos exactos desde ahora hasta el inicio de la reserva
+        diferencia = inicio_res - ahora
+        res.tiempo_minutos = int(diferencia.total_seconds() / 60)
+        
+        # Está dentro de la ventana si faltan 60 min o menos, o han pasado 15 min o menos (-15)
+        res.en_ventana_qr = (-15 <= res.tiempo_minutos <= 59)
+    
+    Reserva.objects.filter(
+        usuario=usuario,
+        estado='activa'
+    ).filter(
+        (Q(fecha__lt=ahora.date())) | 
+        (Q(fecha=ahora.date(), hora_fin__lt=ahora.time()))
+    ).update(estado='finalizada')
+    
+    mis_reservas_canceladas = Reserva.objects.filter(usuario=usuario, estado='cancelada').order_by('-fecha', '-hora_inicio')
+    mis_reservas_expiradas = Reserva.objects.filter(usuario=usuario, estado='finalizada').order_by('-fecha', '-hora_inicio')
+      
     todos_los_recursos = Recurso.objects.all()
     
     # Reservas validadas por QR para poder reportar incidencias 
@@ -494,6 +522,7 @@ def panel_profesor(request):
         'usuario': usuario,
         'mis_reservas_activas': mis_reservas_activas,       
         'mis_reservas_canceladas': mis_reservas_canceladas,
+        'mis_reservas_expiradas': mis_reservas_expiradas,
         'recursos': todos_los_recursos,
         'aulas_encontradas': aulas_encontradas,
         'busqueda_realizada': busqueda_realizada,
@@ -531,6 +560,18 @@ def validar_qr_simulado(request, reserva_id):
         reserva = Reserva.objects.get(id=reserva_id, usuario=request.user, estado='activa')
     except Reserva.DoesNotExist:
         messages.error(request, "Reserva no válida o ya procesada.")
+        return redirect('/panel_profesor/?tab=tab-reservas')
+    
+    ahora = timezone.localtime(timezone.now())
+    inicio_reserva = datetime.combine(reserva.fecha, reserva.hora_inicio)
+    inicio_reserva = timezone.make_aware(inicio_reserva, timezone.get_current_timezone())
+    
+    # Desde 1 hora antes (-60 min) hasta 15 minutos después (+15 min)
+    limite_inferior = inicio_reserva - timedelta(hours=1)
+    limite_superior = inicio_reserva + timedelta(minutes=15)
+    
+    if not (limite_inferior <= ahora <= limite_superior):
+        messages.error(request, "La validación por QR solo está disponible desde 1 hora antes y hasta 15 minutos después de empezar la clase.")
         return redirect('/panel_profesor/?tab=tab-reservas')
 
     # Procesa el formulario cuando el usuario escanea/introduce el token

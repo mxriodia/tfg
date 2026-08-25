@@ -710,28 +710,29 @@
                                     {% if necesita_checkin %}⚠️ Acción Requerida: Próxima clase hoy{% else %}✅ Presencia Validada{% endif %}
                                 </h3>
                                 
-                                <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
-                                    <div>
-                                        <span style="font-size: 18px; font-weight: 700;">Aula {{ proxima_sesion.aula.numero_aula }}</span>
-                                        <span style="color: var(--text-muted);"> — Edificio {{ proxima_sesion.aula.edificio.numero_edificio }} ({{ proxima_sesion.aula.edificio.nombre }})</span>
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                                    <div style="flex: 1; min-width: 250px;">
+                                        <div>
+                                            <span style="font-size: 18px; font-weight: 700;">Aula {{ proxima_sesion.aula.numero_aula }}</span>
+                                            <span style="color: var(--text-muted);"> — Edificio {{ proxima_sesion.aula.edificio.numero_edificio }} ({{ proxima_sesion.aula.edificio.nombre }})</span>
+                                        </div>
                                         <p style="margin: 8px 0 0 0; font-size: 14px;">
                                             Horario: <strong>{{ proxima_sesion.hora_inicio|time:"H:i" }} - {{ proxima_sesion.hora_fin|time:"H:i" }}</strong>
                                         </p>
                                     </div>                                    
-                                    <div style="text-align: right; min-width: 200px;">
-                                        {% if necesita_checkin %}
-                                            {% if tiempo_restante_minutos > 0 %}
-                                                {% if tiempo_restante_minutos <= 60 %}
+                                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; text-align: right;">                                        {% if necesita_checkin %}
+                                            {% if tiempo_restante_minutos <= 76 %}
+                                                {% if tiempo_restante_minutos > -1 %}
                                                     <div style="color: var(--danger); font-weight: 700; font-size: 13px; margin-bottom: 8px;">
-                                                        ⏱️ Quedan {{ tiempo_restante_minutos }} min para registrar presencia
+                                                        ⏱️ Quedan {{ tiempo_restante_minutos|add:1 }}  min para registrar presencia
                                                     </div>
-                                                {% endif %}
+                                                {% endif %} 
+                                                <a href="{% url 'validar_qr' proxima_sesion.id %}" class="btn-action reserve" style="text-decoration: none; padding: 8px 14px; font-size: 12px;">📱 Validar presencia (QR)</a>
                                             {% else %}
-                                                <div style="color: var(--danger); font-weight: 700; font-size: 13px; margin-bottom: 8px;">
-                                                    🚨 Límite de tiempo excedido (Check-in urgente)
-                                                </div>
+                                                <span style="color: var(--text-muted); font-size: 12px; font-style: italic;">
+                                                    ⏰ El QR se habilitará 1 hora antes de la sesión.
+                                                </span>
                                             {% endif %}
-                                            <a href="{% url 'validar_qr' proxima_sesion.id %}" class="btn-action reserve" style="text-decoration: none; padding: 8px 14px; font-size: 12px;">📱 Validar presencia (QR)</a>
                                         {% else %}
                                             <span style="background: #d1fae5; color: #065f46; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 13px; display: inline-block;">
                                                 ✓ Presencia confirmada
@@ -914,18 +915,29 @@
                             
                             <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border); display: flex; gap: 10px; align-items: center;">
                                 {% if not res.fecha_validacion %}
-                                    <a href="{% url 'validar_qr' res.id %}" class="btn-action reserve" style="text-decoration: none; padding: 8px 16px; font-size: 13px;">📱 Validar presencia (QR)</a>
+                                    {% if res.en_ventana_qr %}
+                                        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap;">
+                                            <a href="{% url 'validar_qr' res.id %}" class="btn-action reserve" style="text-decoration: none; padding: 8px 16px; font-size: 13px; white-space: nowrap;">📱 Validar presencia (QR)</a>
+                                        </div>
+                                    {% else %}
+                                        <span style="color: var(--text-muted); font-size: 12px; font-style: italic;">
+                                            {% if res.tiempo_minutos >= 59 %}
+                                                ⏰ El QR se habilitará 1 hora antes de la sesión.
+                                            {% endif %}
+                                        </span>
+                                    {% endif %}
+
+                                    <button class="btn-action secondary" style="padding: 8px 16px; font-size: 13px;" onclick="toggleEditZone('edit-{{ res.id }}')">⚙️ Reajustar horario</button>
+                                
+                                    <form method="POST" style="display:inline; margin-left: auto;" onsubmit="return confirm('¿Seguro que deseas cancelar esta reserva?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="reserva_id" value="{{ res.id }}">
+                                        <button type="submit" name="btn_eliminar_reserva" class="btn-action danger" style="padding: 8px 16px; font-size: 13px;">Cancelar reserva</button>
+                                    </form>
+
                                 {% else %}
                                     <span style="color: var(--success); font-weight: 700; font-size: 14px; display: inline-flex; align-items: center;">✓ Presencia confirmada</span>
                                 {% endif %}
-                                
-                                <button class="btn-action secondary" style="padding: 8px 16px; font-size: 13px;" onclick="toggleEditZone('edit-{{ res.id }}')">⚙️ Reajustar horario</button>
-                                
-                                <form method="POST" style="display:inline; margin-left: auto;" onsubmit="return confirm('¿Seguro que deseas cancelar esta reserva?');">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="reserva_id" value="{{ res.id }}">
-                                    <button type="submit" name="btn_eliminar_reserva" class="btn-action danger" style="padding: 8px 16px; font-size: 13px;">Cancelar reserva</button>
-                                </form>
                             </div>
 
                             <div id="edit-{{ res.id }}" class="edit-zone">
@@ -961,6 +973,25 @@
                 <h3 style="color: var(--text-muted); font-size: 16px; margin-top: 40px; margin-bottom: 15px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; align-items: center;">
                     🔴 Reservas canceladas o expiradas
                 </h3>
+
+                {% if mis_reservas_expiradas %}
+                    {% for res in mis_reservas_expiradas %}
+                        <div class="reserva-card cancelada" style="margin-bottom: 15px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div>
+                                    <strong style="font-size: 17px; color: #475569;">Aula {{ res.aula.numero_aula }}</strong> &nbsp;•&nbsp; <span style="color: var(--text-muted);"> {{ res.aula.edificio }} </span><br>
+                                    <span style="font-size: 13px; display: inline-block; margin-top: 5px; color: var(--text-muted);">
+                                        📅 {{ res.fecha }} &nbsp;|&nbsp; ⏰ {{ res.hora_inicio|time:"H:i" }} - {{ res.hora_fin|time:"H:i" }}
+                                    </span>
+                                </div>
+                                <!-- Etiqueta Gris para Expiradas -->
+                                <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; background-color: #f1f5f9; color: #475569;">
+                                    Expirada
+                                </span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
                 
                 {% if mis_reservas_canceladas %}
                     {% for res in mis_reservas_canceladas %}
