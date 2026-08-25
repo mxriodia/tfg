@@ -991,7 +991,8 @@ def recuperar_contrasena(request):
         try:
             user = Usuario.objects.get(email=email)
             # Encripta el ID del usuario en base64 de forma sencilla para meterlo en la URL segura
-            user_id_b64 = base64.b64encode(str(user.id).encode('utf-8')).decode('utf-8')
+            token_seguro = f"{user.id}:{user.password}"
+            user_id_b64 = base64.b64encode(token_seguro.encode('utf-8')).decode('utf-8')
             enlace_restaurar = f"http://127.0.0.1:8000/restablecer-contrasena/{user_id_b64}/"
                 
             # Envía el correo al email indicado
@@ -1020,11 +1021,16 @@ def restablecer_contrasena(request, uidb64):
     exito_cambio = False
     try:
         # Decodifica el ID del usuario del enlace
-        uid = base64.b64decode(uidb64.encode('utf-8')).decode('utf-8')
-        user = Usuario.objects.get(id=int(uid))
-    except (TypeError, ValueError, OverflowError, Usuario.DoesNotExist):
+        token_decodificado = base64.b64decode(uidb64.encode('utf-8')).decode('utf-8')
+        user_id_str, password_fragmento = token_decodificado.split(':', 1)
+        user = Usuario.objects.get(id=int(user_id_str))
+        
+        # Valida que la contraseña no haya cambiado desde que se envió el correo
+        if user.password != password_fragmento:
+            raise ValueError("El enlace ya ha sido utilizado.")
+    except (TypeError, ValueError, OverflowError, Usuario.DoesNotExist, Exception):
         messages.error(request, "ERROR_LINK")
-        return render(request, 'reservas/restablecer_contrasena.html', {'exito_cambio': exito_cambio})
+        return render(request, 'reservas/login.html')
 
     if request.method == 'POST':
         pass1 = request.POST.get('pass1')
