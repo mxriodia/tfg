@@ -132,3 +132,5 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'mxriodia@gmail.com'  # Correo Gmail del administrador
 EMAIL_HOST_PASSWORD = 'biej lldx hjqp vrle'    #  Contraseña de aplicación de Google
 DEFAULT_FROM_EMAIL = f"Sistema de Gestión de Aulas UPO <{EMAIL_HOST_USER}>"
+
+LOGIN_URL = 'login'
