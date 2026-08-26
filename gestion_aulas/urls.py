@@ -31,6 +31,7 @@ urlpatterns = [
     path('panel_administrador/', reservas_views.panel_administrador, name='panel_administrador'),
     path('recuperar-clave/', reservas_views.recuperar_contrasena, name='recuperar_contrasena'),
     path('restablecer-contrasena/<str:uidb64>/', reservas_views.restablecer_contrasena, name='restablecer_contrasena'),
+    path('logout/', reservas_views.cerrar_sesion, name='logout'),
     path("admin/", admin.site.urls),
 ]
 

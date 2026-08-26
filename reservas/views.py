@@ -14,6 +14,7 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 import base64
 from PIL import Image
+from django.contrib.auth import logout
 
 # Create your views here.
 
@@ -1043,3 +1044,7 @@ def restablecer_contrasena(request, uidb64):
             messages.success(request, "SUCCESS")
 
     return render(request, 'reservas/restablecer_contrasena.html', {'exito_cambio': exito_cambio})
+
+def cerrar_sesion(request):
+    logout(request)
+    return redirect('/')
