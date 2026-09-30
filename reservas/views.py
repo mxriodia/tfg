@@ -517,8 +517,15 @@ def panel_profesor(request):
         
     labs_aulas = [f"Aula {item['aula__numero_aula']}, Edificio {item['aula__edificio__numero_edificio']}" for item in top_aulas]
     datos_aulas = [item['total'] for item in top_aulas]
+    
+    reservas_validadas = Reserva.objects.filter(
+        usuario=usuario,
+        estado='activa',
+        fecha_validacion__isnull=False
+    ).select_related('aula', 'aula__edificio')
 
     context = {
+        'reservas_validadas': reservas_validadas,
         'usuario': usuario,
         'mis_reservas_activas': mis_reservas_activas,       
         'mis_reservas_canceladas': mis_reservas_canceladas,
@@ -949,7 +956,7 @@ def panel_administrador(request):
                 messages.success(request, "Notificación descartada.")
             except Notificacion.DoesNotExist:
                 pass
-            return redirect('/panel_administrador/?tab=tab-usuarios')
+            return redirect('/panel_administrador/?tab=tab-dashboard')
 
     notificaciones_admin = Notificacion.objects.filter(usuario=usuario, leida=False).order_by('-fecha_envio')
     
